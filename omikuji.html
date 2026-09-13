@@ -1,795 +1,1105 @@
 <!DOCTYPE html>
-<html lang="ja" class="h-full">
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>令和開運 雅おみくじ</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Google Fonts: Shippori Mincho & Zen Antique -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Antique&display=swap" rel="stylesheet">
-  
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  
-  <!-- Tone.js for Sound Effects -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-  
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <style>
-    body {
-      font-family: 'Shippori Mincho', serif;
-      background-color: #121013;
-      color: #2b262d;
-      overflow-x: hidden;
-    }
-
-    .font-zen {
-      font-family: 'Zen Antique', serif;
-    }
-
-    /* 縦書き用スタイル */
-    .vertical-text {
-      writing-mode: vertical-rl;
-      text-orientation: upright;
-      letter-spacing: 0.15em;
-    }
-
-    /* 和風背景パターン */
-    .washi-bg {
-      background-color: #fcf9f2;
-      background-image: radial-gradient(#e5decf 0.75px, transparent 0.75px), radial-gradient(#e5decf 0.75px, #fcf9f2 0.75px);
-      background-size: 30px 30px;
-      background-position: 0 0, 15px 15px;
-    }
-
-    /* 漆風グラデーション */
-    .urushi-card {
-      background: linear-gradient(145deg, #1f1a1c, #0d0b0c);
-      border: 2px solid #c5a059;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(197, 160, 89, 0.2);
-    }
-
-    /* 朱色アクセント */
-    .shushu-bg {
-      background-color: #b82a20;
-    }
-    
-    .shushu-border {
-      border-color: #b82a20;
-    }
-
-    /* おみくじ筒のアニメーション */
-    @keyframes shake {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      15% { transform: translate(-8px, -12px) rotate(-8deg); }
-      30% { transform: translate(8px, -8px) rotate(8deg); }
-      45% { transform: translate(-10px, -15px) rotate(-10deg); }
-      60% { transform: translate(10px, -5px) rotate(10deg); }
-      75% { transform: translate(-6px, -12px) rotate(-6deg); }
-      90% { transform: translate(6px, -8px) rotate(6deg); }
-      100% { transform: translate(0, 0) rotate(0deg); }
-    }
-
-    .animate-shake {
-      animation: shake 0.6s ease-in-out infinite;
-    }
-
-    /* おみくじ棒の出現アニメーション */
-    @keyframes stickEject {
-      0% { transform: translateY(0); opacity: 0; }
-      50% { opacity: 1; }
-      100% { transform: translateY(-110px); opacity: 1; }
-    }
-
-    .animate-eject {
-      animation: stickEject 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-
-    /* 和風巻物の展開 */
-    @keyframes scrollOpen {
-      0% { transform: scaleY(0.05) scaleX(0.8); opacity: 0; }
-      50% { transform: scaleY(1) scaleX(0.8); opacity: 0.8; }
-      100% { transform: scaleY(1) scaleX(1); opacity: 1; }
-    }
-
-    .animate-scroll-open {
-      animation: scrollOpen 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      transform-origin: top center;
-    }
-
-    /* スクロールバー装飾 */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #1a181b;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #c5a059;
-      border-radius: 3px;
-    }
-  </style>
-</head>
-
-<body class="h-full flex flex-col justify-between text-stone-200 relative">
-
-  <!-- 桜の花びらエフェクト用 Canvas -->
-  <canvas id="sakuraCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
-
-  <!-- ヘッダー -->
-  <header class="relative z-10 w-full border-b border-amber-900/40 bg-stone-950/80 backdrop-blur-md px-4 py-3 flex items-center justify-between shadow-lg">
-    <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-full shushu-bg flex items-center justify-center text-amber-100 font-bold text-xl border border-amber-400/40 shadow">
-        ⛩️
-      </div>
-      <div>
-        <h1 class="text-xl md:text-2xl font-bold tracking-widest text-amber-200 font-zen">令和開運 雅神社</h1>
-        <p class="text-xs text-stone-400 tracking-wider">電子参拝・御神籤処</p>
-      </div>
-    </div>
-
-    <!-- ナビゲーションボタン -->
-    <div class="flex items-center gap-2">
-      <button id="soundToggleBtn" class="p-2 rounded-lg border border-amber-700/50 hover:bg-amber-900/30 text-amber-200 text-sm flex items-center gap-1 transition">
-        <i data-lucide="volume-2" class="w-4 h-4"></i>
-        <span class="hidden sm:inline">効果音</span>
-      </button>
-      <button id="historyBtn" class="p-2 rounded-lg border border-amber-700/50 hover:bg-amber-900/30 text-amber-200 text-sm flex items-center gap-1 transition">
-        <i data-lucide="scroll" class="w-4 h-4"></i>
-        <span class="hidden sm:inline">おみくじ帳</span>
-      </button>
-      <button id="knotBtn" class="p-2 rounded-lg border border-amber-700/50 hover:bg-amber-900/30 text-amber-200 text-sm flex items-center gap-1 transition">
-        <i data-lucide="bookmark" class="w-4 h-4"></i>
-        <span class="hidden sm:inline">結び処</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- メインコンテンツ -->
-  <main class="relative z-10 flex-1 flex flex-col items-center justify-center p-4 max-w-4xl mx-auto w-full">
-    
-    <!-- メインおみくじ画面 -->
-    <div id="drawSection" class="w-full flex flex-col items-center text-center py-6 transition-all duration-500">
-      
-      <!-- 鳥居飾りイラスト -->
-      <div class="mb-4 text-amber-500/80 opacity-90">
-        <svg class="w-24 h-12 mx-auto fill-current" viewBox="0 0 100 50">
-          <path d="M 5,10 L 95,10 L 95,15 L 85,15 L 85,45 L 75,45 L 75,20 L 25,20 L 25,45 L 15,45 L 15,15 L 5,15 Z"/>
-          <path d="M 0,5 L 100,5 L 100,10 L 0,10 Z"/>
-          <rect x="45" y="15" width="10" height="15"/>
-        </svg>
-      </div>
-
-      <h2 class="text-2xl md:text-3xl font-bold text-amber-100 mb-2 tracking-widest font-zen">心に願いを込めて</h2>
-      <p class="text-stone-400 text-sm mb-8">筒を揺らして御神籤（おみくじ）をお引きください</p>
-
-      <!-- おみくじ筒コンテナ -->
-      <div class="relative my-6 cursor-pointer group" id="cylinderArea">
-        
-        <!-- 出てくるおみくじ棒（初期は隠れている） -->
-        <div id="omikujiStick" class="absolute left-1/2 -top-4 -translate-x-1/2 w-4 h-32 bg-amber-200 rounded-t border-2 border-amber-600 shadow-md opacity-0 z-0 flex flex-col items-center justify-start pt-2">
-          <span id="stickNumber" class="text-[10px] text-amber-950 font-bold vertical-text">第一番</span>
-        </div>
-
-        <!-- 3D風おみくじ筒 -->
-        <div id="omikujiCylinder" class="relative z-10 w-36 h-64 md:w-44 md:h-72 bg-gradient-to-r from-amber-950 via-stone-900 to-amber-950 rounded-2xl border-4 border-amber-600/80 shadow-2xl flex flex-col items-center justify-between py-4 transform transition hover:scale-105">
-          <!-- 金の装飾バンド Top -->
-          <div class="w-full h-6 bg-gradient-to-r from-amber-600 via-amber-300 to-amber-600 border-y border-amber-800 shadow"></div>
-          
-          <!-- 中央の和風マーク＆文字 -->
-          <div class="flex flex-col items-center justify-center space-y-2">
-            <div class="w-16 h-16 rounded-full border-2 border-amber-500/60 flex items-center justify-center bg-black/40">
-              <span class="text-2xl font-bold text-amber-300 font-zen vertical-text">御神籤</span>
-            </div>
-          </div>
-
-          <!-- 金の装飾バンド Bottom -->
-          <div class="w-full h-6 bg-gradient-to-r from-amber-600 via-amber-300 to-amber-600 border-y border-amber-800 shadow"></div>
-        </div>
-
-        <!-- 揺らし案内ヒント -->
-        <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-amber-400/80 whitespace-nowrap flex items-center gap-1 group-hover:text-amber-300">
-          <i data-lucide="hand" class="w-3.5 h-3.5 animate-bounce"></i>
-          クリックまたはタップで振る
-        </div>
-      </div>
-
-      <!-- 操作ボタン -->
-      <div class="mt-10">
-        <button id="drawBtn" class="relative group overflow-hidden px-10 py-4 rounded-full shushu-bg border-2 border-amber-400 text-amber-100 font-bold text-lg tracking-widest shadow-xl hover:brightness-110 active:scale-95 transition">
-          <span class="relative z-10 flex items-center gap-2">
-            <span>おみくじを振る</span>
-            <i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i>
-          </span>
-          <div class="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-300/30 to-amber-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-        </button>
-      </div>
-
-    </div>
-
-    <!-- おみくじ結果表示画面（初期非表示） -->
-    <div id="resultSection" class="hidden w-full max-w-2xl mx-auto my-4 transition-all duration-700">
-      
-      <!-- 和紙風おみくじ本体 -->
-      <div class="washi-bg text-stone-900 rounded-lg p-6 md:p-10 shadow-2xl border-4 border-amber-800 relative animate-scroll-open overflow-hidden">
-        
-        <!-- 上部飾り赤ライン -->
-        <div class="border-b-2 border-red-800/40 pb-4 mb-6 flex justify-between items-end">
-          <div>
-            <p class="text-xs text-red-800 font-bold tracking-widest">令和開運 雅神社 御神札</p>
-            <h3 id="resultStickNum" class="text-xl font-bold font-zen text-stone-800">第一番</h3>
-          </div>
-          <div class="text-right">
-            <span class="text-xs border border-red-800 text-red-800 px-2 py-0.5 rounded">奉納・祈祷済</span>
-          </div>
-        </div>
-
-        <!-- 運勢メイン表示 -->
-        <div class="flex flex-col md:flex-row gap-6 items-center md:items-start justify-around my-6">
-          <div class="flex flex-col items-center justify-center p-4 rounded-lg bg-red-900/10 border-2 border-red-800/30 min-w-[140px]">
-            <p class="text-xs text-red-900 mb-1 font-bold">運勢</p>
-            <div id="resultLuckName" class="text-5xl md:text-6xl font-extrabold text-red-700 font-zen tracking-widest py-2">
-              大吉
-            </div>
-          </div>
-
-          <div class="flex-1 text-left">
-            <h4 class="text-sm font-bold text-stone-600 mb-1 flex items-center gap-1">
-              <i data-lucide="quote" class="w-4 h-4 text-red-800"></i>
-              運気の総評
-            </h4>
-            <p id="resultSummary" class="text-base md:text-lg text-stone-800 leading-relaxed font-semibold border-l-2 border-red-800/40 pl-3 py-1">
-              雲が晴れ渡り、輝かしい太陽が差し込むような絶好の運気です。これまでの努力が結実し、大きな好機が訪れます。
-            </p>
-          </div>
-        </div>
-
-        <!-- 項目別運勢グリッド -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6 text-sm">
-          <div class="bg-amber-900/5 p-3 rounded border border-amber-900/20">
-            <span class="font-bold text-red-900 block mb-1">【願望】</span>
-            <span id="detailWish" class="text-stone-700">思いのままに叶う。強い信念を持て。</span>
-          </div>
-          <div class="bg-amber-900/5 p-3 rounded border border-amber-900/20">
-            <span class="font-bold text-red-900 block mb-1">【恋愛】</span>
-            <span id="detailLove" class="text-stone-700">良縁あり。素直な気持ちが吉。</span>
-          </div>
-          <div class="bg-amber-900/5 p-3 rounded border border-amber-900/20">
-            <span class="font-bold text-red-900 block mb-1">【仕事・学問】</span>
-            <span id="detailWork" class="text-stone-700">目標達成。たゆまぬ努力が実を結ぶ。</span>
-          </div>
-          <div class="bg-amber-900/5 p-3 rounded border border-amber-900/20">
-            <span class="font-bold text-red-900 block mb-1">【金運】</span>
-            <span id="detailMoney" class="text-stone-700">思いがけない収入あり。計画的に。</span>
-          </div>
-          <div class="bg-amber-900/5 p-3 rounded border border-amber-900/20">
-            <span class="font-bold text-red-900 block mb-1">【健康】</span>
-            <span id="detailHealth" class="text-stone-700">活力に満ちる。適度な運動を心がけよ。</span>
-          </div>
-          <div class="bg-amber-900/5 p-3 rounded border border-amber-900/20">
-            <span class="font-bold text-red-900 block mb-1">【旅行・失物】</span>
-            <span id="detailTravel" class="text-stone-700">吉方への旅よし。無くした物は出る。</span>
-          </div>
-        </div>
-
-        <!-- ラッキー指標 -->
-        <div class="border-t border-b border-red-800/30 py-3 my-4 flex flex-wrap justify-around text-xs md:text-sm text-stone-800 bg-red-900/5 rounded">
-          <div><span class="font-bold text-red-900">🪭 幸運の色：</span><span id="luckyColor">朱色</span></div>
-          <div><span class="font-bold text-red-900">🔮 幸運の品：</span><span id="luckyItem">木彫りの置物</span></div>
-          <div><span class="font-bold text-red-900">🧭 恵方：</span><span id="luckyDir">南南東</span></div>
-        </div>
-
-        <!-- アクションボタン -->
-        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <button id="actionKnotBtn" class="px-5 py-2.5 bg-red-800 hover:bg-red-900 text-amber-50 rounded-lg text-sm font-bold flex items-center gap-2 shadow transition">
-            <i data-lucide="bookmark" class="w-4 h-4"></i>
-            境内の結び処に結ぶ
-          </button>
-          <button id="actionShareBtn" class="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-amber-50 rounded-lg text-sm font-bold flex items-center gap-2 shadow transition">
-            <i data-lucide="share-2" class="w-4 h-4"></i>
-            結果を共有する
-          </button>
-          <button id="actionRedrawBtn" class="px-5 py-2.5 bg-stone-700 hover:bg-stone-800 text-stone-100 rounded-lg text-sm font-bold flex items-center gap-2 transition">
-            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-            もう一度引く
-          </button>
-        </div>
-
-      </div>
-    </div>
-
-  </main>
-
-  <!-- 結び処モーダル -->
-  <div id="knotModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="urushi-card max-w-lg w-full rounded-2xl p-6 text-center relative border border-amber-500/40">
-      <button class="closeModalBtn absolute top-4 right-4 text-stone-400 hover:text-white">
-        <i data-lucide="x" class="w-6 h-6"></i>
-      </button>
-
-      <h3 class="text-2xl font-bold text-amber-200 font-zen mb-2">境内の御神木・結び処</h3>
-      <p class="text-xs text-stone-400 mb-6">おみくじを結ぶことで、悪運を祓い、良運を固く繋ぎ止めます。</p>
-
-      <div class="w-full h-48 bg-stone-900 rounded-xl border border-amber-900/60 relative overflow-hidden flex items-center justify-center my-4">
-        <div class="absolute top-4 inset-x-0 h-4 bg-amber-700/40 border-y border-amber-500/30 flex justify-around items-center">
-          <div class="w-2 h-6 bg-stone-200 shadow"></div>
-          <div class="w-2 h-6 bg-stone-200 shadow"></div>
-          <div class="w-2 h-6 bg-stone-200 shadow"></div>
-        </div>
-        
-        <div id="knotContainer" class="absolute inset-0 pt-8 px-4 flex flex-wrap gap-2 justify-center items-center overflow-y-auto">
-        </div>
-      </div>
-
-      <p id="knotCountText" class="text-xs text-amber-300/80 mb-4">現在 0 枚のおみくじが結ばれています</p>
-
-      <button class="closeModalBtn px-6 py-2 bg-amber-600/80 hover:bg-amber-600 text-stone-950 font-bold rounded-full text-sm">
-        境内へ戻る
-      </button>
-    </div>
-  </div>
-
-  <!-- おみくじ帳（履歴）モーダル -->
-  <div id="historyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="urushi-card max-w-xl w-full rounded-2xl p-6 relative border border-amber-500/40 flex flex-col max-h-[85vh]">
-      <button class="closeModalBtn absolute top-4 right-4 text-stone-400 hover:text-white">
-        <i data-lucide="x" class="w-6 h-6"></i>
-      </button>
-
-      <div class="border-b border-amber-800/60 pb-3 mb-4">
-        <h3 class="text-2xl font-bold text-amber-200 font-zen flex items-center gap-2">
-          <i data-lucide="book-open" class="w-6 h-6 text-amber-400"></i>
-          参拝・御神籤帳
-        </h3>
-        <p class="text-xs text-stone-400">これまでに引いたおみくじの記録</p>
-      </div>
-
-      <div id="historyList" class="flex-1 overflow-y-auto space-y-3 pr-2 my-2">
-        <div class="text-center py-10 text-stone-500 text-sm">まだおみくじの記録がありません</div>
-      </div>
-
-      <div class="pt-3 border-t border-amber-900/40 flex justify-between items-center">
-        <button id="clearHistoryBtn" class="text-xs text-red-400 hover:text-red-300 underline transition-colors">
-          履歴を消去
-        </button>
-        <button class="closeModalBtn px-6 py-2 bg-amber-600/80 hover:bg-amber-600 text-stone-950 font-bold rounded-full text-sm">
-          閉じる
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 通知トースト -->
-  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-amber-300 text-stone-950 font-bold px-6 py-3 rounded-full shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
-    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-800"></i>
-    <span id="toastMsg">クリップボードにコピーしました</span>
-  </div>
-
-  <!-- フッター -->
-  <footer class="relative z-10 w-full text-center py-4 text-xs text-stone-500 border-t border-amber-900/20 bg-stone-950/60">
-    <p>© 令和開運 雅神社 - 心静かに幸運を願う電子参拝処</p>
-  </footer>
-
-  <script>
-    /* おみくじデータ定義 */
-    const FORTUNE_DATA = [
-      {
-        luck: "大吉",
-        stickNum: "第一番",
-        summary: "天地開明し、万物光り輝く時。長年の願いが成就し、最高の幸運が舞い降ります。感謝の心を忘れずに進んでください。",
-        wish: "心掛け次第で速やかに叶う。高望みも良し。",
-        love: "最高の出会いあり。誠実な態度の人が意中の相手。",
-        work: "大きな成果を得る。昇進や合格の兆し顕著なり。",
-        money: "金運隆盛。予期せぬ宝を得る機会に恵まれる。",
-        health: "身心ともに極めて良好。活発に動いて吉。",
-        travel: "旅立つに最良の日。東南の方角が特に吉。",
-        luckyColor: "金色・朱色",
-        luckyItem: "和紙の文鎮",
-        luckyDir: "南南東"
-      },
-      {
-        luck: "中吉",
-        stickNum: "第七番",
-        summary: "運気は着実に上昇中。焦らず地道な努力を積み重ねることで、大きな成果を手にすることができます。",
-        wish: "時間はかかるが必ず叶う。諦めぬこと。",
-        love: "良好な発展あり。相手の意見に耳を傾けて吉。",
-        work: "周囲の協力を得て順調に進展する。",
-        money: "着実に入りあり。無駄遣いを控えればさらに吉。",
-        health: "良好。日頃の生活リズムを守ることが大事。",
-        travel: "近場の旅行に幸あり。リフレッシュに良し。",
-        luckyColor: "深緑色",
-        luckyItem: "木彫りの根付",
-        luckyDir: "東北東"
-      },
-      {
-        luck: "小吉",
-        stickNum: "第十二番",
-        summary: "穏やかな幸運に包まれた日。大きな変化は望わず、目の前の日常を丁寧に慈しむことが開運の鍵となります。",
-        wish: "控えめにしておけば叶う。謙虚さを保て。",
-        love: "じわじわと仲が深まる。ゆっくり焦らず。",
-        work: "凡事徹底。基本を忠実に守れば評価される。",
-        money: "収支のバランス良し。身の丈に合った過ごし方を。",
-        health: "軽い運動を習慣にすると吉。暴飲暴食に注意。",
-        travel: "身近な散策に思わぬ発見あり。",
-        luckyColor: "浅葱色（あさぎいろ）",
-        luckyItem: "手拭い",
-        luckyDir: "西南西"
-      },
-      {
-        luck: "吉",
-        stickNum: "第十八番",
-        summary: "平穏無事にして安定した運気。素直な心で人と接し、善行を積むことで更なる好運を呼び込むでしょう。",
-        wish: "望みは叶うが慢心は禁物なり。",
-        love: "穏やかな関係が続く。感謝を言葉に伝えること。",
-        work: "期待通りの結果を得る。誠意ある対応が鍵。",
-        money: "平年並み。計画的なやりくりで安泰。",
-        health: "疲れを感じたら早めの休息をとること。",
-        travel: "旅先に吉あり。計画をしっかり立てて出かけよ。",
-        luckyColor: "山吹色",
-        luckyItem: "扇子",
-        luckyDir: "北北西"
-      },
-      {
-        luck: "末吉",
-        stickNum: "第二十五番",
-        summary: "今は準備の時期。芽吹きの時に向けて力を蓄えましょう。後半に向けて徐々に運気は開けていきます。",
-        wish: "焦れば破れる。時を待てば自ずと叶う。",
-        love: "誤解が生じやすい。慎重なコミュニケーションを。",
-        work: "準備と思考の時。自己研鑽に励むが良し。",
-        money: "出費がかさみやすい。財布の紐を締めて。",
-        health: "冷えに注意。体を温める食材を摂ると吉。",
-        travel: "遠出は控えめにするが無難なり。",
-        luckyColor: "藤色",
-        luckyItem: "お茶の葉",
-        luckyDir: "東"
-      },
-      {
-        luck: "凶",
-        stickNum: "第三十三番",
-        summary: "一時的に試練の風が吹く時。しかし落ち込む必要はありません。境内におみくじを結び、気を引き締めれば難を逃れます。",
-        wish: "今は叶いにくし。方向性を再確認せよ。",
-        love: "我を通すと衝突あり。一歩譲る姿勢を。",
-        work: "ケアレスミスに注意。二重の確認を徹底せよ。",
-        money: "甘い話に惑わされるな。手堅くあれ。",
-        health: "睡眠不足に注意。十分な休養を最優先に。",
-        travel: "延期できるなら後日に改めるのが吉。",
-        luckyColor: "白色",
-        luckyItem: "塩・お守り",
-        luckyDir: "北"
-      }
-    ];
-
-    /* 音響制御 (Tone.js) */
-    let soundEnabled = true;
-    let synth = null;
-
-    function initAudio() {
-      if (!synth && typeof Tone !== 'undefined') {
-        synth = new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: "sine" },
-          envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.8 }
-        }).toDestination();
-        synth.volume.value = -8;
-      }
-    }
-
-    function playShakeSound() {
-      if (!soundEnabled) return;
-      try {
-        Tone.start();
-        initAudio();
-        const now = Tone.now();
-        synth.triggerAttackRelease("C5", "16n", now);
-        synth.triggerAttackRelease("G5", "16n", now + 0.08);
-        synth.triggerAttackRelease("E5", "16n", now + 0.16);
-      } catch(e){}
-    }
-
-    function playDrawSound() {
-      if (!soundEnabled) return;
-      try {
-        initAudio();
-        const now = Tone.now();
-        synth.triggerAttackRelease(["A4", "D5", "E5", "A5"], "2n", now);
-      } catch(e){}
-    }
-
-    /* 桜吹雪 Canvas アニメーション */
-    const canvas = document.getElementById('sakuraCanvas');
-    const ctx = canvas.getContext('2d');
-    let petals = [];
-
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    class Petal {
-      constructor() {
-        this.reset();
-      }
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * -canvas.height;
-        this.size = Math.random() * 8 + 6;
-        this.speedY = Math.random() * 1.5 + 0.8;
-        this.speedX = Math.random() * 1 - 0.5;
-        this.angle = Math.random() * 360;
-        this.spin = Math.random() * 2 - 1;
-        this.opacity = Math.random() * 0.5 + 0.4;
-      }
-      update() {
-        this.y += this.speedY;
-        this.x += Math.sin(this.y * 0.01) + this.speedX;
-        this.angle += this.spin;
-        if (this.y > canvas.height + 20) {
-          this.reset();
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゆめいろ着せ替え Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Zen Maru Gothic"', 'sans-serif'],
+                        cute: ['Quicksand', '"Zen Maru Gothic"', 'sans-serif'],
+                    },
+                    colors: {
+                        pastel: {
+                            pink: '#FFD1DC',
+                            purple: '#E2CEF7',
+                            blue: '#B5E2FA',
+                            yellow: '#FFF5BA',
+                            mint: '#C1F0C8',
+                            darkPurple: '#5E4B8B'
+                        }
+                    },
+                    animation: {
+                        'bounce-short': 'bounce 0.5s ease-in-out 1',
+                        'sparkle': 'sparkle 2s infinite ease-in-out',
+                        'float': 'float 3s infinite ease-in-out',
+                    },
+                    keyframes: {
+                        sparkle: {
+                            '0%, 100%': { opacity: 0.3, transform: 'scale(0.8)' },
+                            '50%': { opacity: 1, transform: 'scale(1.2)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        }
+                    }
+                }
+            }
         }
-      }
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate((this.angle * Math.PI) / 180);
-        ctx.globalAlpha = this.opacity;
-        ctx.fillStyle = "#fbcfe8";
+    </script>
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 50%, #F0F8FF 100%);
+            touch-action: manipulation;
+        }
+        
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBA6EC;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #A074C9;
+        }
 
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.bezierCurveTo(-this.size, -this.size / 2, -this.size, this.size, 0, this.size);
-        ctx.bezierCurveTo(this.size, this.size, this.size, -this.size / 2, 0, 0);
-        ctx.fill();
+        /* アイテム選択時の光る枠線 */
+        .item-card {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .item-card:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+        .item-card.active {
+            border-color: #9333EA;
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
+            transform: translateY(-2px);
+        }
 
-        ctx.restore();
-      }
-    }
+        /* カラーピッカー円形の影 */
+        .color-dot {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .color-dot:hover {
+            transform: scale(1.25);
+        }
+        .color-dot.active {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px white, 0 0 0 5px #9333EA;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 flex flex-col justify-between select-none">
 
-    for (let i = 0; i < 35; i++) {
-      petals.push(new Petal());
-    }
-
-    function animateSakura() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      petals.forEach(p => {
-        p.update();
-        p.draw();
-      });
-      requestAnimationFrame(animateSakura);
-    }
-    animateSakura();
-
-    let isDrawing = false;
-    let currentFortune = null;
-    let knotCount = 12;
-
-    const drawBtn = document.getElementById('drawBtn');
-    const cylinderArea = document.getElementById('cylinderArea');
-    const omikujiCylinder = document.getElementById('omikujiCylinder');
-    const omikujiStick = document.getElementById('omikujiStick');
-    const stickNumber = document.getElementById('stickNumber');
-    const drawSection = document.getElementById('drawSection');
-    const resultSection = document.getElementById('resultSection');
-
-    function handleDrawOmikuji() {
-      if (isDrawing) return;
-      isDrawing = true;
-
-      playShakeSound();
-
-      omikujiCylinder.classList.add('animate-shake');
-      drawBtn.disabled = true;
-      drawBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
-      const randomIndex = Math.floor(Math.random() * FORTUNE_DATA.length);
-      currentFortune = FORTUNE_DATA[randomIndex];
-      stickNumber.textContent = currentFortune.stickNum;
-
-      let interval = setInterval(playShakeSound, 180);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        omikujiCylinder.classList.remove('animate-shake');
-
-        omikujiStick.classList.add('animate-eject');
-        playDrawSound();
-
-        setTimeout(() => {
-          showResult(currentFortune);
-          saveHistory(currentFortune);
-          isDrawing = false;
-          drawBtn.disabled = false;
-          drawBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-          omikujiStick.classList.remove('animate-eject');
-        }, 1100);
-
-      }, 1200);
-    }
-
-    drawBtn.addEventListener('click', handleDrawOmikuji);
-    cylinderArea.addEventListener('click', handleDrawOmikuji);
-
-    function showResult(fortune) {
-      document.getElementById('resultStickNum').textContent = fortune.stickNum;
-      document.getElementById('resultLuckName').textContent = fortune.luck;
-      document.getElementById('resultSummary').textContent = fortune.summary;
-      document.getElementById('detailWish').textContent = fortune.wish;
-      document.getElementById('detailLove').textContent = fortune.love;
-      document.getElementById('detailWork').textContent = fortune.work;
-      document.getElementById('detailMoney').textContent = fortune.money;
-      document.getElementById('detailHealth').textContent = fortune.health;
-      document.getElementById('detailTravel').textContent = fortune.travel;
-      document.getElementById('luckyColor').textContent = fortune.luckyColor;
-      document.getElementById('luckyItem').textContent = fortune.luckyItem;
-      document.getElementById('luckyDir').textContent = fortune.luckyDir;
-
-      if (fortune.luck === "大吉" && typeof confetti !== 'undefined') {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#c5a059', '#b82a20', '#ffffff', '#ffd700']
-        });
-      }
-
-      drawSection.classList.add('hidden');
-      resultSection.classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    document.getElementById('actionRedrawBtn').addEventListener('click', () => {
-      resultSection.classList.add('hidden');
-      drawSection.classList.remove('hidden');
-    });
-
-    /* ローカルストレージ＆履歴管理 */
-    function saveHistory(fortune) {
-      let history = JSON.parse(localStorage.getItem('omikuji_history') || '[]');
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-      
-      history.unshift({
-        date: dateStr,
-        luck: fortune.luck,
-        stickNum: fortune.stickNum,
-        summary: fortune.summary
-      });
-
-      if (history.length > 20) history.pop();
-      localStorage.setItem('omikuji_history', JSON.stringify(history));
-    }
-
-    function renderHistory() {
-      const historyList = document.getElementById('historyList');
-      let history = JSON.parse(localStorage.getItem('omikuji_history') || '[]');
-
-      if (history.length === 0) {
-        historyList.innerHTML = '<div class="text-center py-10 text-stone-500 text-sm">まだおみくじの記録がありません</div>';
-        return;
-      }
-
-      historyList.innerHTML = history.map((item) => `
-        <div class="p-3 rounded-lg bg-stone-900/80 border border-amber-900/40 flex items-center justify-between">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-amber-500/80">${item.date}</span>
-              <span class="text-xs text-stone-400 font-mono">${item.stickNum}</span>
+    <!-- ヘッダーバー -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-purple-100 sticky top-0 z-40 px-4 py-3 shadow-sm">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl animate-bounce">✨</span>
+                <h1 class="text-xl md:text-2xl font-black bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
+                    ゆめいろ Dress-Up Studio
+                </h1>
             </div>
-            <p class="text-xs text-stone-300 mt-1 line-clamp-1">${item.summary}</p>
-          </div>
-          <div class="font-zen text-lg font-bold ${item.luck === '大吉' ? 'text-amber-400' : 'text-red-400'} min-w-[3.5rem] text-right">
-            ${item.luck}
-          </div>
+            
+            <!-- アクションボタン群 -->
+            <div class="flex items-center space-x-2 md:space-x-3">
+                <button id="btn-sound" onclick="toggleSound()" class="p-2 md:px-3 md:py-1.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-600 text-xs md:text-sm font-bold flex items-center space-x-1 transition">
+                    <span id="sound-icon">🔊</span>
+                    <span class="hidden md:inline">サウンド ON</span>
+                </button>
+
+                <button onclick="randomizeOutfit()" class="px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white text-xs md:text-sm font-bold shadow-md hover:shadow-lg transition transform active:scale-95 flex items-center space-x-1">
+                    <span>🎲</span>
+                    <span>おまかせ</span>
+                </button>
+                
+                <button onclick="resetOutfit()" class="px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs md:text-sm font-bold transition flex items-center space-x-1">
+                    <span>🔄</span>
+                    <span class="hidden sm:inline">リセット</span>
+                </button>
+
+                <button onclick="takeSnapshot()" class="px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white text-xs md:text-sm font-bold shadow-md hover:shadow-lg transition transform active:scale-95 flex items-center space-x-1">
+                    <span>📷</span>
+                    <span>撮影</span>
+                </button>
+            </div>
         </div>
-      `).join('');
-    }
+    </header>
 
-    document.getElementById('actionKnotBtn').addEventListener('click', () => {
-      knotCount++;
-      addKnotPaper();
-      showToast("境内のおみくじ結び処にお納めしました");
-      openModal('knotModal');
-    });
+    <!-- メインコンテンツ -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-2 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6 items-stretch">
+        
+        <!-- 左側：キャンバス/プレビューエリア -->
+        <section class="w-full md:w-1/2 lg:w-5/12 flex flex-col items-center justify-center">
+            <div class="relative w-full max-w-[380px] aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white flex items-center justify-center transition-all" id="stage-container">
+                
+                <!-- 背景レイヤー -->
+                <div id="bg-layer" class="absolute inset-0 bg-gradient-to-b from-pink-100 to-purple-100 transition-all duration-300">
+                    <div id="bg-decoration" class="absolute inset-0 flex items-center justify-center opacity-40"></div>
+                </div>
 
-    function addKnotPaper() {
-      const container = document.getElementById('knotContainer');
-      const knot = document.createElement('div');
-      knot.className = "w-3 h-10 bg-amber-100/90 rounded-sm shadow-md border-x border-amber-300/50 transform rotate-12 flex items-center justify-center opacity-90 transition hover:scale-110";
-      knot.style.transform = `rotate(${Math.floor(Math.random() * 60 - 30)}deg)`;
-      knot.innerHTML = `<span class="text-[8px] text-red-900 vertical-text font-bold">奉納</span>`;
-      container.appendChild(knot);
-      document.getElementById('knotCountText').textContent = `現在 ${knotCount} 枚のおみくじが結ばれています`;
-    }
+                <!-- SVGモデルアバター (動的描画レイヤー) -->
+                <svg id="character-svg" viewBox="0 0 400 600" class="relative w-full h-full z-10 drop-shadow-md">
+                    <!-- レイヤー定義グループ -->
+                    <g id="layer-back-hair"></g>
+                    <g id="layer-body"></g>
+                    <g id="layer-expression"></g>
+                    <g id="layer-bottoms"></g>
+                    <g id="layer-tops"></g>
+                    <g id="layer-dress"></g>
+                    <g id="layer-shoes"></g>
+                    <g id="layer-front-hair"></g>
+                    <g id="layer-acc"></g>
+                </svg>
 
-    for(let i=0; i<8; i++) addKnotPaper();
+                <!-- キラキラエフェクトオーバーレイ -->
+                <div class="absolute top-4 left-4 pointer-events-none animate-sparkle text-xl">✨</div>
+                <div class="absolute bottom-6 right-6 pointer-events-none animate-sparkle text-2xl" style="animation-delay: 1s;">💖</div>
+                <div class="absolute top-1/3 right-4 pointer-events-none animate-sparkle text-lg" style="animation-delay: 0.5s;">⭐</div>
+            </div>
 
-    document.getElementById('actionShareBtn').addEventListener('click', () => {
-      if (!currentFortune) return;
-      const shareText = `【令和開運 雅おみくじ】本日の運勢は『${currentFortune.luck}』でした！ (${currentFortune.stickNum})\n幸運の色: ${currentFortune.luckyColor}\n#雅おみくじ #おみくじ`;
-      
-      const textarea = document.createElement('textarea');
-      textarea.value = shareText;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      
-      showToast("結果をクリップボードにコピーしました");
-    });
+            <!-- キャラクターの肌色ピッカー -->
+            <div class="mt-3 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm border border-purple-100 flex items-center space-x-3">
+                <span class="text-xs font-bold text-gray-500">肌の色:</span>
+                <div class="flex space-x-2" id="skin-color-picker"></div>
+            </div>
+        </section>
 
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      document.getElementById('toastMsg').textContent = msg;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
-      setTimeout(() => {
-        toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 2500);
-    }
+        <!-- 右側：カスタマイズパネル -->
+        <section class="w-full md:w-1/2 lg:w-7/12 flex flex-col bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/60 overflow-hidden">
+            
+            <!-- カテゴリタブ（横スクロール） -->
+            <div class="flex overflow-x-auto no-scrollbar bg-purple-50/70 p-2 border-b border-purple-100 gap-1" id="category-tabs">
+                <!-- JavaScriptで動的生成 -->
+            </div>
 
-    /* モーダル制御 */
-    function openModal(modalId) {
-      document.getElementById(modalId).classList.remove('hidden');
-    }
+            <!-- サブカテゴリ / カラーカスタマイズバー -->
+            <div id="color-bar-container" class="px-4 py-2 bg-purple-100/40 border-b border-purple-100 flex items-center justify-between text-xs">
+                <span class="font-bold text-purple-700" id="color-label">パーツのカラー選択</span>
+                <div class="flex items-center space-x-2 overflow-x-auto py-1" id="part-color-picker">
+                    <!-- カラーピッカーがここに入る -->
+                </div>
+            </div>
 
-    document.getElementById('historyBtn').addEventListener('click', () => {
-      renderHistory();
-      openModal('historyModal');
-    });
+            <!-- アイテムグリッドエリア -->
+            <div class="flex-1 p-4 overflow-y-auto max-h-[380px] md:max-h-[500px]" id="item-grid-container">
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-3" id="item-grid">
+                    <!-- アイテムカードがここに動的表示される -->
+                </div>
+            </div>
 
-    document.getElementById('knotBtn').addEventListener('click', () => {
-      openModal('knotModal');
-    });
+            <!-- ボトムステータスバー -->
+            <div class="p-3 bg-white border-t border-purple-50 text-center text-xs text-purple-400 font-medium flex justify-between items-center px-6">
+                <span id="active-category-name">ヘアスタイル</span>
+                <span id="selected-item-count" class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-bold">選択中: デフォルト</span>
+            </div>
+        </section>
+    </main>
 
-    document.querySelectorAll('.closeModalBtn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.fixed').classList.add('hidden');
-      });
-    });
+    <!-- フッター -->
+    <footer class="text-center py-2 text-xs text-purple-400/80">
+        © 2026 ゆめいろ着せ替え Studio | Designed with ❤️
+    </footer>
 
-    /* 履歴消去（2段階ボタンUI） */
-    let clearConfirming = false;
-    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-    clearHistoryBtn.addEventListener('click', () => {
-      if (!clearConfirming) {
-        clearConfirming = true;
-        clearHistoryBtn.textContent = '本当に消去しますか？（クリックで確定）';
-        clearHistoryBtn.classList.add('text-red-300', 'font-bold');
-        setTimeout(() => {
-          clearConfirming = false;
-          clearHistoryBtn.textContent = '履歴を消去';
-          clearHistoryBtn.classList.remove('text-red-300', 'font-bold');
-        }, 3000);
-      } else {
-        localStorage.removeItem('omikuji_history');
-        renderHistory();
-        showToast('履歴を消去しました');
-        clearConfirming = false;
-        clearHistoryBtn.textContent = '履歴を消去';
-        clearHistoryBtn.classList.remove('text-red-300', 'font-bold');
-      }
-    });
+    <!-- 撮影画像モーダル -->
+    <div id="photo-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full flex flex-col items-center space-y-4 shadow-2xl transform transition-all scale-95 opacity-0" id="photo-modal-content">
+            <h3 class="text-lg font-black text-purple-600 flex items-center space-x-1">
+                <span>📸</span><span>すてきなコーデが完成！</span>
+            </h3>
+            
+            <div class="rounded-2xl overflow-hidden shadow-md border-2 border-purple-100 w-full max-w-[280px]">
+                <img id="snapshot-img" src="" alt="Snapshot" class="w-full h-auto">
+            </div>
 
-    const soundBtn = document.getElementById('soundToggleBtn');
-    soundBtn.addEventListener('click', () => {
-      soundEnabled = !soundEnabled;
-      soundBtn.classList.toggle('bg-amber-900/50', soundEnabled);
-      showToast(soundEnabled ? "効果音を有効にしました" : "効果音を無効にしました");
-    });
+            <div class="flex space-x-3 w-full">
+                <a id="download-link" download="my-fashion-style.png" class="flex-1 py-2.5 rounded-full bg-gradient-to-r from-pink-400 to-purple-500 text-white font-bold text-center text-sm shadow-md hover:shadow-lg transition">
+                    💾 画像を保存
+                </a>
+                <button onclick="closePhotoModal()" class="px-4 py-2.5 rounded-full bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
 
-    window.onload = function() {
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
-    };
-  </script>
+    <script>
+        // 音響効果 (Web Audio API)
+        let soundEnabled = true;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'equip') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'camera') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.setValueAtTime(400, now + 0.05);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-icon');
+            btn.textContent = soundEnabled ? '🔊' : '🔇';
+            document.getElementById('btn-sound').classList.toggle('opacity-50', !soundEnabled);
+        }
+
+        // --- データ定義 ---
+        const skinColors = ['#FFE0D0', '#FFD1BA', '#F5C2A5', '#E0A98B', '#8D5B4C'];
+
+        const colorPalettes = {
+            hair: ['#4A3728', '#FFB7C5', '#9B51E0', '#2D9CDB', '#F2C94C', '#FF7A00', '#219653', '#E0E0E0', '#333333'],
+            clothes: ['#FFB6C1', '#B5E2FA', '#C1F0C8', '#E2CEF7', '#FFF5BA', '#FF6B6B', '#4D96FF', '#6BCB77', '#333333', '#FFFFFF'],
+            eyes: ['#4B2E83', '#2E5A88', '#2E8B57', '#8B4513', '#D2691E', '#E91E63']
+        };
+
+        // 着用中データ
+        const currentOutfit = {
+            skin: '#FFE0D0',
+            hairStyle: 'long',
+            hairColor: '#4A3728',
+            expression: 'smile',
+            eyeColor: '#4B2E83',
+            tops: 'tshirt',
+            topsColor: '#FFB6C1',
+            bottoms: 'skirt',
+            bottomsColor: '#B5E2FA',
+            dress: 'none',
+            dressColor: '#E2CEF7',
+            shoes: 'sneakers',
+            shoesColor: '#FFFFFF',
+            acc: 'ribbon',
+            accColor: '#FF6B6B',
+            bg: 'pastel'
+        };
+
+        // カテゴリマスター
+        const categories = [
+            { id: 'hair', name: 'ヘアスタイル', icon: '💇‍♀️', hasColor: 'hair' },
+            { id: 'expression', name: 'メイク・表情', icon: '✨', hasColor: 'eyes' },
+            { id: 'tops', name: 'トップス', icon: '👕', hasColor: 'clothes' },
+            { id: 'bottoms', name: 'ボトムス', icon: '👖', hasColor: 'clothes' },
+            { id: 'dress', name: 'ワンピース', icon: '👗', hasColor: 'clothes' },
+            { id: 'shoes', name: 'シューズ', icon: '👟', hasColor: 'clothes' },
+            { id: 'acc', name: 'アクセサリ', icon: '🎀', hasColor: 'clothes' },
+            { id: 'bg', name: '背景ステージ', icon: '🖼️', hasColor: false }
+        ];
+
+        let activeCategory = 'hair';
+
+        // 各カテゴリのアイテム定義
+        const categoryItems = {
+            hair: [
+                { id: 'long', name: 'ストレートロング', icon: '💇‍♀️' },
+                { id: 'twintail', name: 'ツインテール', icon: '👧' },
+                { id: 'bob', name: 'ふんわりボブ', icon: '👩' },
+                { id: 'pony', name: 'ポニーテール', icon: '👱‍♀️' },
+                { id: 'bun', name: 'おだんごヘア', icon: '🍡' },
+                { id: 'short', name: 'ベリーショート', icon: '🧒' }
+            ],
+            expression: [
+                { id: 'smile', name: 'にっこりスマイル', icon: '😊' },
+                { id: 'wink', name: 'おちゃめウィンク', icon: '😜' },
+                { id: 'cool', name: 'すまし顔', icon: '😌' },
+                { id: 'surprised', name: 'パッチリおめめ', icon: '😲' },
+                { id: 'shy', name: '照れ顔', icon: '😳' }
+            ],
+            tops: [
+                { id: 'none', name: 'なし', icon: '🚫' },
+                { id: 'tshirt', name: 'ロゴTシャツ', icon: '👕' },
+                { id: 'blouse', name: 'フリルブラウス', icon: '👚' },
+                { id: 'knit', name: 'ゆったりニット', icon: '🧶' },
+                { id: 'shirt', name: 'カジュアルシャツ', icon: '👔' }
+            ],
+            bottoms: [
+                { id: 'none', name: 'なし', icon: '🚫' },
+                { id: 'skirt', name: 'フレアスカート', icon: '👗' },
+                { id: 'pleated', name: 'プリーツミニ', icon: 'スカート' },
+                { id: 'pants', name: 'ワイドパンツ', icon: '👖' },
+                { id: 'shorts', name: 'デニムショート', icon: '🩳' }
+            ],
+            dress: [
+                { id: 'none', name: 'なし', icon: '🚫' },
+                { id: 'casual', name: 'ティアードワンピ', icon: '👗' },
+                { id: 'party', name: 'ドレス', icon: '✨' },
+                { id: 'overall', name: 'サロペット', icon: '👖' }
+            ],
+            shoes: [
+                { id: 'none', name: 'なし', icon: '🚫' },
+                { id: 'sneakers', name: 'ハイカットスニーカー', icon: '👟' },
+                { id: 'pumps', name: 'リボンパンプス', icon: '👠' },
+                { id: 'boots', name: 'ショートブーツ', icon: '👢' },
+                { id: 'loafers', name: '厚底ローファー', icon: '👞' }
+            ],
+            acc: [
+                { id: 'none', name: 'なし', icon: '🚫' },
+                { id: 'ribbon', name: 'ビッグリボン', icon: '🎀' },
+                { id: 'catEars', name: 'ねこみみカチューシャ', icon: '🐱' },
+                { id: 'glasses', name: '丸めがね', icon: '👓' },
+                { id: 'hat', name: 'ベレー帽', icon: '👒' },
+                { id: 'beret', name: '天使のつばさ', icon: '👼' }
+            ],
+            bg: [
+                { id: 'pastel', name: 'パステルキャンディ', color: 'linear-gradient(135deg, #FFD1DC, #E2CEF7)' },
+                { id: 'room', name: 'マイルーム', color: 'linear-gradient(135deg, #FFF5BA, #FFD1DC)' },
+                { id: 'night', name: 'ゆめかわナイト', color: 'linear-gradient(135deg, #2D1B69, #9B51E0)' },
+                { id: 'mint', name: 'ミントフレッシュ', color: 'linear-gradient(135deg, #C1F0C8, #B5E2FA)' },
+                { id: 'sunset', name: 'サンセットカフェ', color: 'linear-gradient(135deg, #FF7A00, #FFB6C1)' }
+            ]
+        };
+
+        // --- SVG描画ロジック ---
+        function renderCharacter() {
+            // 肌色適用
+            const bodyGroup = document.getElementById('layer-body');
+            bodyGroup.innerHTML = `
+                <!-- 頭部 -->
+                <ellipse cx="200" cy="200" rx="65" ry="75" fill="${currentOutfit.skin}" />
+                <!-- 首 -->
+                <rect x="190" y="265" width="20" height="30" rx="5" fill="${currentOutfit.skin}" />
+                <!-- 体・素体 (ウエスト〜ヒップ) -->
+                <path d="M 165 280 Q 155 310 162 345 Q 170 355 200 355 Q 230 355 238 345 Q 245 310 235 280 Z" fill="${currentOutfit.skin}" />
+                <!-- 腕 (左・右) -->
+                <path d="M 160 285 Q 135 340 140 400" stroke="${currentOutfit.skin}" stroke-width="20" stroke-linecap="round" fill="none" />
+                <path d="M 240 285 Q 265 340 260 400" stroke="${currentOutfit.skin}" stroke-width="20" stroke-linecap="round" fill="none" />
+                <!-- 脚 (左・右: ヒップから足先までしっかり描画) -->
+                <rect x="168" y="340" width="25" height="205" rx="12" fill="${currentOutfit.skin}" />
+                <rect x="207" y="340" width="25" height="205" rx="12" fill="${currentOutfit.skin}" />
+            `;
+
+            // 後ろ髪
+            const backHairGroup = document.getElementById('layer-back-hair');
+            let backHairSvg = '';
+            if (currentOutfit.hairStyle === 'long') {
+                backHairSvg = `
+                    <!-- 頭頂部〜全体ベース -->
+                    <path d="M 125 180 Q 120 110 200 108 Q 280 110 275 180 Q 285 320 270 450 Q 200 475 130 450 Q 115 320 125 180 Z" fill="${currentOutfit.hairColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'twintail') {
+                backHairSvg = `
+                    <!-- 頭頂部ベース -->
+                    <path d="M 130 180 Q 125 110 200 108 Q 275 110 270 180 Q 265 220 135 220 Z" fill="${currentOutfit.hairColor}" />
+                    <!-- 左右のツインテール束 -->
+                    <path d="M 140 190 C 80 230 60 360 100 420 C 125 380 140 280 150 210 Z" fill="${currentOutfit.hairColor}" />
+                    <path d="M 260 190 C 320 230 340 360 300 420 C 275 380 260 280 250 210 Z" fill="${currentOutfit.hairColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'bob') {
+                backHairSvg = `
+                    <!-- ボブ全頭ベース（頭頂部〜肩） -->
+                    <path d="M 122 190 Q 120 108 200 105 Q 280 108 278 190 Q 285 285 255 295 Q 200 270 145 295 Q 115 285 122 190 Z" fill="${currentOutfit.hairColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'pony') {
+                backHairSvg = `
+                    <!-- 頭頂部ベース -->
+                    <path d="M 130 180 Q 125 110 200 108 Q 275 110 270 180 Q 265 230 135 230 Z" fill="${currentOutfit.hairColor}" />
+                    <!-- ポニーテール毛束 -->
+                    <path d="M 240 160 C 330 150 350 310 280 370 C 255 310 245 230 235 180 Z" fill="${currentOutfit.hairColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'bun') {
+                backHairSvg = `
+                    <!-- おだんご本体2つ -->
+                    <circle cx="135" cy="115" r="32" fill="${currentOutfit.hairColor}" />
+                    <circle cx="265" cy="115" r="32" fill="${currentOutfit.hairColor}" />
+                    <!-- 頭頂部ベース -->
+                    <path d="M 130 180 Q 125 112 200 110 Q 275 112 270 180 Q 265 225 135 225 Z" fill="${currentOutfit.hairColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'short') {
+                backHairSvg = `
+                    <!-- ベリーショート頭頂部〜全頭ベース -->
+                    <path d="M 126 190 Q 120 108 200 105 Q 280 108 274 190 Q 275 235 260 245 Q 200 230 140 245 Q 125 235 126 190 Z" fill="${currentOutfit.hairColor}" />
+                `;
+            }
+            backHairGroup.innerHTML = backHairSvg;
+
+            // 表情（眉、目、口、チーク）
+            const expGroup = document.getElementById('layer-expression');
+            let expSvg = '';
+            const eyeColor = currentOutfit.eyeColor;
+
+            if (currentOutfit.expression === 'shy') {
+                // --- 照れ顔 ---
+                expSvg = `
+                    <!-- 濃いめチーク ＆ 照れ斜め線 -->
+                    <ellipse cx="158" cy="222" rx="15" ry="8" fill="#FF6B81" opacity="0.65" />
+                    <ellipse cx="242" cy="222" rx="15" ry="8" fill="#FF6B81" opacity="0.65" />
+                    <path d="M 148 220 L 154 225 M 155 219 L 161 224 M 162 218 L 168 223" stroke="#E63946" stroke-width="1.5" stroke-linecap="round" />
+                    <path d="M 232 218 L 238 223 M 239 219 L 245 224 M 246 220 L 252 225" stroke="#E63946" stroke-width="1.5" stroke-linecap="round" />
+
+                    <!-- 困り眉（ハの字） -->
+                    <path d="M 150 173 Q 165 178 178 175" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+                    <path d="M 250 173 Q 235 178 222 175" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+
+                    <!-- はにかみ目（少し下向きアーチ） -->
+                    <path d="M 152 195 Q 165 183 178 195" stroke="#333" stroke-width="4" stroke-linecap="round" fill="none" />
+                    <path d="M 222 195 Q 235 183 248 195" stroke="#333" stroke-width="4" stroke-linecap="round" fill="none" />
+
+                    <!-- むにゅっとした口元 -->
+                    <path d="M 192 232 Q 196 227 200 231 Q 204 235 208 230" stroke="#333" stroke-width="3" stroke-linecap="round" fill="none" />
+                `;
+            } else {
+                // 通常チーク
+                expSvg += `
+                    <ellipse cx="160" cy="220" rx="12" ry="6" fill="#FF9999" opacity="0.5" />
+                    <ellipse cx="240" cy="220" rx="12" ry="6" fill="#FF9999" opacity="0.5" />
+                `;
+
+                if (currentOutfit.expression === 'wink') {
+                    expSvg += `
+                        <!-- 眉毛 -->
+                        <path d="M 152 173 Q 165 168 178 173" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+                        <path d="M 222 173 Q 235 168 248 173" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+                        <!-- 左目: 開き -->
+                        <ellipse cx="165" cy="195" rx="12" ry="16" fill="#333" />
+                        <ellipse cx="165" cy="195" rx="10" ry="14" fill="${eyeColor}" />
+                        <circle cx="162" cy="189" r="4" fill="#FFF" />
+                        <!-- 右目: ウィンク -->
+                        <path d="M 223 195 Q 235 180 247 195" stroke="#333" stroke-width="4" stroke-linecap="round" fill="none" />
+                    `;
+                } else if (currentOutfit.expression === 'cool') {
+                    expSvg += `
+                        <!-- キリッと眉 -->
+                        <path d="M 150 172 L 176 177" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" />
+                        <path d="M 250 172 L 224 177" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" />
+                        <!-- 目 -->
+                        <ellipse cx="165" cy="195" rx="12" ry="14" fill="#333" />
+                        <ellipse cx="165" cy="197" rx="9" ry="11" fill="${eyeColor}" />
+                        <circle cx="162" cy="191" r="3.5" fill="#FFF" />
+                        <ellipse cx="235" cy="195" rx="12" ry="14" fill="#333" />
+                        <ellipse cx="235" cy="197" rx="9" ry="11" fill="${eyeColor}" />
+                        <circle cx="232" cy="191" r="3.5" fill="#FFF" />
+                    `;
+                } else if (currentOutfit.expression === 'surprised') {
+                    expSvg += `
+                        <!-- 上がり眉 -->
+                        <path d="M 152 166 Q 165 160 178 166" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+                        <path d="M 222 166 Q 235 160 248 166" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+                        <!-- パッチリ目 -->
+                        <circle cx="165" cy="195" r="15" fill="#333" />
+                        <circle cx="165" cy="195" r="12" fill="${eyeColor}" />
+                        <circle cx="160" cy="190" r="5" fill="#FFF" />
+                        <circle cx="235" cy="195" r="15" fill="#333" />
+                        <circle cx="235" cy="195" r="12" fill="${eyeColor}" />
+                        <circle cx="230" cy="190" r="5" fill="#FFF" />
+                    `;
+                } else { // smile (にっこり)
+                    expSvg += `
+                        <!-- にっこりアーチ眉 -->
+                        <path d="M 152 172 Q 165 166 178 172" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+                        <path d="M 222 172 Q 235 166 248 172" stroke="#5A3E2B" stroke-width="3" stroke-linecap="round" fill="none" />
+                        <!-- きらきら目 -->
+                        <ellipse cx="165" cy="195" rx="13" ry="17" fill="#333" />
+                        <ellipse cx="165" cy="196" rx="10" ry="14" fill="${eyeColor}" />
+                        <circle cx="161" cy="189" r="4" fill="#FFF" />
+                        <circle cx="168" cy="202" r="2" fill="#FFF" />
+
+                        <ellipse cx="235" cy="195" rx="13" ry="17" fill="#333" />
+                        <ellipse cx="235" cy="196" rx="10" ry="14" fill="${eyeColor}" />
+                        <circle cx="231" cy="189" r="4" fill="#FFF" />
+                        <circle cx="238" cy="202" r="2" fill="#FFF" />
+                    `;
+                }
+
+                // 口
+                if (currentOutfit.expression === 'surprised') {
+                    expSvg += `<ellipse cx="200" cy="233" rx="7" ry="10" fill="#FF6666" />`;
+                } else if (currentOutfit.expression === 'cool') {
+                    expSvg += `<path d="M 192 232 L 208 232" stroke="#333" stroke-width="3" stroke-linecap="round" />`;
+                } else { // smile
+                    expSvg += `<path d="M 188 228 Q 200 244 212 228 Z" stroke="#333" stroke-width="2.5" stroke-linecap="round" fill="#FF6666" />`;
+                }
+            }
+
+            expGroup.innerHTML = expSvg;
+
+            // ワンピース (ドレス着用の場合はトップス/ボトムスより優先)
+            const dressGroup = document.getElementById('layer-dress');
+            const topsGroup = document.getElementById('layer-tops');
+            const bottomsGroup = document.getElementById('layer-bottoms');
+
+            if (currentOutfit.dress !== 'none') {
+                topsGroup.innerHTML = '';
+                bottomsGroup.innerHTML = '';
+                let dressSvg = '';
+                const color = currentOutfit.dressColor;
+                if (currentOutfit.dress === 'casual') {
+                    dressSvg = `
+                        <path d="M 160 280 L 240 280 L 255 420 Q 200 440 145 420 Z" fill="${color}" />
+                        <!-- フリルライン -->
+                        <path d="M 145 420 Q 200 440 255 420" stroke="#FFF" stroke-width="4" fill="none" />
+                        <!-- 襟ぐり -->
+                        <path d="M 180 280 Q 200 300 220 280" stroke="#FFF" stroke-width="3" fill="none" />
+                    `;
+                } else if (currentOutfit.dress === 'party') {
+                    dressSvg = `
+                        <path d="M 165 280 Q 200 295 235 280 L 260 440 Q 200 455 140 440 Z" fill="${color}" />
+                        <ellipse cx="200" cy="330" rx="36" ry="8" fill="#FFF" opacity="0.6" />
+                    `;
+                } else if (currentOutfit.dress === 'overall') {
+                    dressSvg = `
+                        <!-- 肩ひも -->
+                        <rect x="175" y="280" width="10" height="50" fill="${color}" />
+                        <rect x="215" y="280" width="10" height="50" fill="${color}" />
+                        <!-- パンツ部分 (丈を調整し足を2本見せる) -->
+                        <path d="M 160 320 L 240 320 L 245 450 L 208 450 L 200 370 L 192 450 L 155 450 Z" fill="${color}" />
+                    `;
+                }
+                dressGroup.innerHTML = dressSvg;
+            } else {
+                dressGroup.innerHTML = '';
+                
+                // トップス描画
+                let topsSvg = '';
+                const tColor = currentOutfit.topsColor;
+                if (currentOutfit.tops === 'tshirt') {
+                    topsSvg = `
+                        <path d="M 155 280 L 245 280 L 250 345 L 150 345 Z" fill="${tColor}" />
+                        <!-- 袖 -->
+                        <path d="M 155 280 L 130 310 L 150 325 L 160 295 Z" fill="${tColor}" />
+                        <path d="M 245 280 L 270 310 L 250 325 L 240 295 Z" fill="${tColor}" />
+                        <!-- スターロゴ -->
+                        <polygon points="200,300 203,308 212,308 205,313 207,321 200,316 193,321 195,313 188,308 197,308" fill="#FFF" />
+                    `;
+                } else if (currentOutfit.tops === 'blouse') {
+                    topsSvg = `
+                        <path d="M 160 280 L 240 280 L 245 350 Q 200 360 155 350 Z" fill="${tColor}" />
+                        <!-- フリル襟 -->
+                        <path d="M 175 280 Q 200 305 225 280" fill="#FFF" />
+                        <!-- 腕パフスリーブ -->
+                        <circle cx="145" cy="295" r="16" fill="${tColor}" />
+                        <circle cx="255" cy="295" r="16" fill="${tColor}" />
+                    `;
+                } else if (currentOutfit.tops === 'knit') {
+                    topsSvg = `
+                        <path d="M 150 280 L 250 280 L 255 365 L 145 365 Z" fill="${tColor}" />
+                        <path d="M 150 280 L 125 340 L 145 350 Z" fill="${tColor}" />
+                        <path d="M 250 280 L 275 340 L 255 350 Z" fill="${tColor}" />
+                    `;
+                } else if (currentOutfit.tops === 'shirt') {
+                    topsSvg = `
+                        <!-- シャツ本体 -->
+                        <path d="M 155 280 L 245 280 L 248 355 L 152 355 Z" fill="${tColor}" />
+                        <!-- 袖 -->
+                        <path d="M 155 280 L 132 315 L 152 325 L 160 295 Z" fill="${tColor}" />
+                        <path d="M 245 280 L 268 315 L 248 325 L 240 295 Z" fill="${tColor}" />
+                        <!-- 襟 -->
+                        <polygon points="200,292 175,280 188,300" fill="#FFF" />
+                        <polygon points="200,292 225,280 212,300" fill="#FFF" />
+                        <!-- 前立て・ボタン -->
+                        <line x1="200" y1="292" x2="200" y2="355" stroke="rgba(0,0,0,0.15)" stroke-width="2" />
+                        <circle cx="200" cy="310" r="2.5" fill="#FFF" />
+                        <circle cx="200" cy="330" r="2.5" fill="#FFF" />
+                        <!-- 胸ポケット -->
+                        <rect x="168" y="310" width="16" height="18" rx="2" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" />
+                    `;
+                }
+                topsGroup.innerHTML = topsSvg;
+
+                // ボトムス描画
+                let bottomsSvg = '';
+                const bColor = currentOutfit.bottomsColor;
+                if (currentOutfit.bottoms === 'skirt') {
+                    bottomsSvg = `
+                        <path d="M 160 340 L 240 340 L 260 410 Q 200 425 140 410 Z" fill="${bColor}" />
+                    `;
+                } else if (currentOutfit.bottoms === 'pleated') {
+                    bottomsSvg = `
+                        <path d="M 165 340 L 235 340 L 255 400 L 145 400 Z" fill="${bColor}" />
+                        <line x1="175" y1="340" x2="165" y2="400" stroke="rgba(0,0,0,0.15)" stroke-width="2" />
+                        <line x1="190" y1="340" x2="185" y2="400" stroke="rgba(0,0,0,0.15)" stroke-width="2" />
+                        <line x1="210" y1="340" x2="215" y2="400" stroke="rgba(0,0,0,0.15)" stroke-width="2" />
+                        <line x1="225" y1="340" x2="235" y2="400" stroke="rgba(0,0,0,0.15)" stroke-width="2" />
+                    `;
+                } else if (currentOutfit.bottoms === 'pants') {
+                    bottomsSvg = `
+                        <path d="M 160 340 L 240 340 L 248 455 L 210 455 L 200 375 L 190 455 L 152 455 Z" fill="${bColor}" />
+                    `;
+                } else if (currentOutfit.bottoms === 'shorts') {
+                    bottomsSvg = `
+                        <path d="M 160 340 L 240 340 L 245 385 L 203 385 L 200 370 L 197 385 L 155 385 Z" fill="${bColor}" />
+                    `;
+                }
+                bottomsGroup.innerHTML = bottomsSvg;
+            }
+
+            // 前髪描画
+            const frontHairGroup = document.getElementById('layer-front-hair');
+            let frontHairSvg = '';
+            const hColor = currentOutfit.hairColor;
+
+            // すべてのヘアスタイル共通のW字（ギザギザ）前髪の下端パス
+            const wBangPath = `
+                M 132 175 
+                Q 145 186 160 188 
+                Q 172 182 180 160 
+                Q 190 186 200 190 
+                Q 210 186 220 160 
+                Q 228 182 240 188 
+                Q 255 186 268 175
+            `;
+
+            if (currentOutfit.hairStyle === 'long' || currentOutfit.hairStyle === 'twintail') {
+                frontHairSvg = `
+                    <!-- W字前髪 ＆ サイド姫毛 -->
+                    <path d="${wBangPath} Q 275 112 200 110 Q 125 112 132 175 Z" fill="${hColor}" />
+                    <path d="M 132 175 Q 138 230 148 260 Q 155 210 145 165 Z" fill="${hColor}" />
+                    <path d="M 268 175 Q 262 230 252 260 Q 245 210 255 165 Z" fill="${hColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'bob') {
+                frontHairSvg = `
+                    <!-- W字前髪 ＆ ボブのサイド繋がり -->
+                    <path d="${wBangPath} Q 278 112 200 108 Q 122 112 132 175 Z" fill="${hColor}" />
+                    <path d="M 128 175 Q 122 220 135 250 Q 142 210 135 170 Z" fill="${hColor}" />
+                    <path d="M 272 175 Q 278 220 265 250 Q 258 210 265 170 Z" fill="${hColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'bun') {
+                frontHairSvg = `
+                    <!-- W字前髪 ＆ サイドの触覚 -->
+                    <path d="${wBangPath} Q 272 112 200 110 Q 128 112 132 175 Z" fill="${hColor}" />
+                    <path d="M 140 170 Q 146 215 152 235 Q 154 200 148 165 Z" fill="${hColor}" />
+                    <path d="M 260 170 Q 254 215 248 235 Q 246 200 252 165 Z" fill="${hColor}" />
+                `;
+            } else if (currentOutfit.hairStyle === 'pony') {
+                frontHairSvg = `
+                    <!-- W字前髪 -->
+                    <path d="${wBangPath} Q 274 112 200 108 Q 126 112 132 175 Z" fill="${hColor}" />
+                `;
+            } else { // short
+                frontHairSvg = `
+                    <!-- W字前髪 ＆ ショートサイド -->
+                    <path d="${wBangPath} Q 276 112 200 108 Q 124 112 132 175 Z" fill="${hColor}" />
+                    <path d="M 132 175 Q 130 205 138 220 Q 142 195 136 172 Z" fill="${hColor}" />
+                    <path d="M 268 175 Q 270 205 262 220 Q 258 195 264 172 Z" fill="${hColor}" />
+                `;
+            }
+            frontHairGroup.innerHTML = frontHairSvg;
+
+            // シューズ描画
+            const shoesGroup = document.getElementById('layer-shoes');
+            let shoesSvg = '';
+            const sColor = currentOutfit.shoesColor;
+            if (currentOutfit.shoes === 'sneakers') {
+                shoesSvg = `
+                    <rect x="164" y="530" width="32" height="30" rx="8" fill="${sColor}" />
+                    <rect x="204" y="530" width="32" height="30" rx="8" fill="${sColor}" />
+                    <path d="M 164 550 L 196 550" stroke="#DDD" stroke-width="4" />
+                    <path d="M 204 550 L 236 550" stroke="#DDD" stroke-width="4" />
+                `;
+            } else if (currentOutfit.shoes === 'pumps') {
+                shoesSvg = `
+                    <path d="M 166 535 Q 180 530 196 545 L 196 560 L 166 560 Z" fill="${sColor}" />
+                    <path d="M 204 545 Q 220 530 234 535 L 234 560 L 204 560 Z" fill="${sColor}" />
+                `;
+            } else if (currentOutfit.shoes === 'boots') {
+                shoesSvg = `
+                    <rect x="164" y="490" width="32" height="68" rx="6" fill="${sColor}" />
+                    <rect x="204" y="490" width="32" height="68" rx="6" fill="${sColor}" />
+                `;
+            } else if (currentOutfit.shoes === 'loafers') {
+                shoesSvg = `
+                    <rect x="165" y="525" width="30" height="30" rx="5" fill="${sColor}" />
+                    <rect x="205" y="525" width="30" height="30" rx="5" fill="${sColor}" />
+                    <rect x="163" y="550" width="34" height="10" rx="2" fill="#222" />
+                    <rect x="203" y="550" width="34" height="10" rx="2" fill="#222" />
+                `;
+            }
+            shoesGroup.innerHTML = shoesSvg;
+
+            // アクセサリー描画
+            const accGroup = document.getElementById('layer-acc');
+            let accSvg = '';
+            const aColor = currentOutfit.accColor;
+            if (currentOutfit.acc === 'ribbon') {
+                accSvg = `
+                    <!-- リボン中央＆羽 -->
+                    <polygon points="200,125 170,105 175,135" fill="${aColor}" />
+                    <polygon points="200,125 230,105 225,135" fill="${aColor}" />
+                    <circle cx="200" cy="125" r="7" fill="#FFF" />
+                `;
+            } else if (currentOutfit.acc === 'catEars') {
+                accSvg = `
+                    <polygon points="140,140 120,80 165,115" fill="${aColor}" />
+                    <polygon points="143,135 130,90 160,115" fill="#FFC0CB" />
+                    <polygon points="260,140 280,80 235,115" fill="${aColor}" />
+                    <polygon points="257,135 270,90 240,115" fill="#FFC0CB" />
+                `;
+            } else if (currentOutfit.acc === 'glasses') {
+                accSvg = `
+                    <circle cx="165" cy="195" r="18" fill="none" stroke="${aColor}" stroke-width="3" />
+                    <circle cx="235" cy="195" r="18" fill="none" stroke="${aColor}" stroke-width="3" />
+                    <line x1="183" y1="195" x2="217" y2="195" stroke="${aColor}" stroke-width="3" />
+                `;
+            } else if (currentOutfit.acc === 'hat') {
+                accSvg = `
+                    <path d="M 130 145 Q 200 90 270 145 Z" fill="${aColor}" />
+                    <ellipse cx="200" cy="145" rx="75" ry="12" fill="${aColor}" />
+                `;
+            } else if (currentOutfit.acc === 'beret') { // 天使の羽
+                accSvg = `
+                    <path d="M 130 300 C 70 260 60 340 120 360 C 90 330 120 310 135 315 Z" fill="#FFF" stroke="#E2CEF7" stroke-width="2" />
+                    <path d="M 270 300 C 330 260 340 340 280 360 C 310 330 280 310 265 315 Z" fill="#FFF" stroke="#E2CEF7" stroke-width="2" />
+                `;
+            }
+            accGroup.innerHTML = accSvg;
+
+            // 背景更新
+            const bgObj = categoryItems.bg.find(b => b.id === currentOutfit.bg);
+            if (bgObj) {
+                document.getElementById('bg-layer').style.background = bgObj.color;
+            }
+        }
+
+        // --- UI構築＆イベントハンドラー ---
+
+        // カテゴリタブ描画
+        function renderCategoryTabs() {
+            const container = document.getElementById('category-tabs');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="switchCategory('${cat.id}')" 
+                    class="px-3.5 py-2 rounded-2xl text-xs md:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all ${
+                        activeCategory === cat.id 
+                            ? 'bg-white text-purple-700 shadow-md transform scale-105 border border-purple-200' 
+                            : 'text-gray-500 hover:text-purple-600 hover:bg-white/50'
+                    }">
+                    <span>${cat.icon}</span>
+                    <span>${cat.name}</span>
+                </button>
+            `).join('');
+        }
+
+        // カテゴリ切り替え
+        function switchCategory(catId) {
+            playSound('click');
+            activeCategory = catId;
+            renderCategoryTabs();
+            renderColorPicker();
+            renderItemGrid();
+            
+            const catObj = categories.find(c => c.id === catId);
+            document.getElementById('active-category-name').textContent = catObj ? catObj.name : '';
+        }
+
+        // カラーピッカー描画
+        function renderColorPicker() {
+            const catObj = categories.find(c => c.id === activeCategory);
+            const container = document.getElementById('part-color-picker');
+            const colorBar = document.getElementById('color-bar-container');
+
+            if (!catObj || !catObj.hasColor) {
+                colorBar.classList.add('hidden');
+                return;
+            }
+            colorBar.classList.remove('hidden');
+
+            const paletteType = catObj.hasColor;
+            const colors = colorPalettes[paletteType] || colorPalettes.clothes;
+
+            // 現在選択中のパーツのカラーを取得
+            let currentColor = '#FFFFFF';
+            if (activeCategory === 'hair') currentColor = currentOutfit.hairColor;
+            else if (activeCategory === 'expression') currentColor = currentOutfit.eyeColor;
+            else if (activeCategory === 'tops') currentColor = currentOutfit.topsColor;
+            else if (activeCategory === 'bottoms') currentColor = currentOutfit.bottomsColor;
+            else if (activeCategory === 'dress') currentColor = currentOutfit.dressColor;
+            else if (activeCategory === 'shoes') currentColor = currentOutfit.shoesColor;
+            else if (activeCategory === 'acc') currentColor = currentOutfit.accColor;
+
+            container.innerHTML = colors.map(c => `
+                <button onclick="selectColor('${c}')" 
+                    class="w-6 h-6 rounded-full border border-black/10 color-dot flex-shrink-0 ${currentColor === c ? 'active' : ''}" 
+                    style="background-color: ${c}">
+                </button>
+            `).join('');
+        }
+
+        // カラー選択
+        function selectColor(color) {
+            playSound('click');
+            if (activeCategory === 'hair') currentOutfit.hairColor = color;
+            else if (activeCategory === 'expression') currentOutfit.eyeColor = color;
+            else if (activeCategory === 'tops') currentOutfit.topsColor = color;
+            else if (activeCategory === 'bottoms') currentOutfit.bottomsColor = color;
+            else if (activeCategory === 'dress') currentOutfit.dressColor = color;
+            else if (activeCategory === 'shoes') currentOutfit.shoesColor = color;
+            else if (activeCategory === 'acc') currentOutfit.accColor = color;
+
+            renderColorPicker();
+            renderCharacter();
+        }
+
+        // 肌色ピッカー初期化
+        function initSkinPicker() {
+            const container = document.getElementById('skin-color-picker');
+            container.innerHTML = skinColors.map(c => `
+                <button onclick="selectSkin('${c}')" 
+                    class="w-6 h-6 rounded-full border border-black/10 color-dot ${currentOutfit.skin === c ? 'active' : ''}" 
+                    style="background-color: ${c}">
+                </button>
+            `).join('');
+        }
+
+        function selectSkin(color) {
+            playSound('click');
+            currentOutfit.skin = color;
+            initSkinPicker();
+            renderCharacter();
+        }
+
+        // アイテムグリッド描画
+        function renderItemGrid() {
+            const container = document.getElementById('item-grid');
+            const items = categoryItems[activeCategory] || [];
+
+            // 現在選択中のアイテムID
+            let activeId = 'none';
+            if (activeCategory === 'hair') activeId = currentOutfit.hairStyle;
+            else if (activeCategory === 'expression') activeId = currentOutfit.expression;
+            else if (activeCategory === 'tops') activeId = currentOutfit.tops;
+            else if (activeCategory === 'bottoms') activeId = currentOutfit.bottoms;
+            else if (activeCategory === 'dress') activeId = currentOutfit.dress;
+            else if (activeCategory === 'shoes') activeId = currentOutfit.shoes;
+            else if (activeCategory === 'acc') activeId = currentOutfit.acc;
+            else if (activeCategory === 'bg') activeId = currentOutfit.bg;
+
+            container.innerHTML = items.map(item => {
+                const isActive = activeId === item.id;
+                let previewContent = `<span class="text-3xl">${item.icon || '✨'}</span>`;
+                if (activeCategory === 'bg') {
+                    previewContent = `<div class="w-8 h-8 rounded-full shadow-inner" style="background:${item.color}"></div>`;
+                }
+
+                return `
+                    <button onclick="selectItem('${item.id}')" 
+                        class="item-card p-3 rounded-2xl bg-white border-2 border-purple-50 flex flex-col items-center justify-center space-y-2 cursor-pointer ${isActive ? 'active' : ''}">
+                        ${previewContent}
+                        <span class="text-xs font-bold text-gray-700 text-center truncate w-full">${item.name}</span>
+                    </button>
+                `;
+            }).join('');
+
+            // ステータス表示
+            const activeItemObj = items.find(i => i.id === activeId);
+            document.getElementById('selected-item-count').textContent = `選択中: ${activeItemObj ? activeItemObj.name : 'なし'}`;
+        }
+
+        // アイテム装備
+        function selectItem(itemId) {
+            playSound('equip');
+            if (activeCategory === 'hair') currentOutfit.hairStyle = itemId;
+            else if (activeCategory === 'expression') currentOutfit.expression = itemId;
+            else if (activeCategory === 'tops') {
+                currentOutfit.tops = itemId;
+                if (itemId !== 'none') currentOutfit.dress = 'none'; // ワンピース解除
+            }
+            else if (activeCategory === 'bottoms') {
+                currentOutfit.bottoms = itemId;
+                if (itemId !== 'none') currentOutfit.dress = 'none'; // ワンピース解除
+            }
+            else if (activeCategory === 'dress') {
+                currentOutfit.dress = itemId;
+                if (itemId !== 'none') {
+                    currentOutfit.tops = 'none';
+                    currentOutfit.bottoms = 'none';
+                }
+            }
+            else if (activeCategory === 'shoes') currentOutfit.shoes = itemId;
+            else if (activeCategory === 'acc') currentOutfit.acc = itemId;
+            else if (activeCategory === 'bg') currentOutfit.bg = itemId;
+
+            renderItemGrid();
+            renderCharacter();
+        }
+
+        // おまかせランダムコーデ
+        function randomizeOutfit() {
+            playSound('equip');
+            const getRandom = arr => arr[Math.floor(Math.random() * arr.length)];
+
+            currentOutfit.skin = getRandom(skinColors);
+            currentOutfit.hairStyle = getRandom(categoryItems.hair).id;
+            currentOutfit.hairColor = getRandom(colorPalettes.hair);
+            currentOutfit.expression = getRandom(categoryItems.expression).id;
+            currentOutfit.eyeColor = getRandom(colorPalettes.eyes);
+
+            // ドレス or (トップス+ボトムス)
+            if (Math.random() > 0.5) {
+                currentOutfit.dress = getRandom(categoryItems.dress.filter(i => i.id !== 'none')).id;
+                currentOutfit.tops = 'none';
+                currentOutfit.bottoms = 'none';
+            } else {
+                currentOutfit.dress = 'none';
+                currentOutfit.tops = getRandom(categoryItems.tops.filter(i => i.id !== 'none')).id;
+                currentOutfit.bottoms = getRandom(categoryItems.bottoms.filter(i => i.id !== 'none')).id;
+            }
+
+            currentOutfit.topsColor = getRandom(colorPalettes.clothes);
+            currentOutfit.bottomsColor = getRandom(colorPalettes.clothes);
+            currentOutfit.dressColor = getRandom(colorPalettes.clothes);
+
+            currentOutfit.shoes = getRandom(categoryItems.shoes).id;
+            currentOutfit.shoesColor = getRandom(colorPalettes.clothes);
+
+            currentOutfit.acc = getRandom(categoryItems.acc).id;
+            currentOutfit.accColor = getRandom(colorPalettes.clothes);
+
+            currentOutfit.bg = getRandom(categoryItems.bg).id;
+
+            initSkinPicker();
+            renderColorPicker();
+            renderItemGrid();
+            renderCharacter();
+        }
+
+        // リセット
+        function resetOutfit() {
+            playSound('click');
+            currentOutfit.skin = '#FFE0D0';
+            currentOutfit.hairStyle = 'long';
+            currentOutfit.hairColor = '#4A3728';
+            currentOutfit.expression = 'smile';
+            currentOutfit.eyeColor = '#4B2E83';
+            currentOutfit.tops = 'tshirt';
+            currentOutfit.topsColor = '#FFB6C1';
+            currentOutfit.bottoms = 'skirt';
+            currentOutfit.bottomsColor = '#B5E2FA';
+            currentOutfit.dress = 'none';
+            currentOutfit.dressColor = '#E2CEF7';
+            currentOutfit.shoes = 'sneakers';
+            currentOutfit.shoesColor = '#FFFFFF';
+            currentOutfit.acc = 'ribbon';
+            currentOutfit.accColor = '#FF6B6B';
+            currentOutfit.bg = 'pastel';
+
+            initSkinPicker();
+            renderColorPicker();
+            renderItemGrid();
+            renderCharacter();
+        }
+
+        // スナップショット撮影 (SVG -> Canvas -> PNG)
+        function takeSnapshot() {
+            playSound('camera');
+            const stage = document.getElementById('stage-container');
+            const svgElement = document.getElementById('character-svg');
+            
+            // キャンバス生成
+            const canvas = document.createElement('canvas');
+            const width = 600;
+            const height = 800;
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            // 背景描画
+            const bgObj = categoryItems.bg.find(b => b.id === currentOutfit.bg);
+            const grad = ctx.createLinearGradient(0, 0, width, height);
+            if (currentOutfit.bg === 'night') {
+                grad.addColorStop(0, '#2D1B69');
+                grad.addColorStop(1, '#9B51E0');
+            } else if (currentOutfit.bg === 'mint') {
+                grad.addColorStop(0, '#C1F0C8');
+                grad.addColorStop(1, '#B5E2FA');
+            } else if (currentOutfit.bg === 'sunset') {
+                grad.addColorStop(0, '#FF7A00');
+                grad.addColorStop(1, '#FFB6C1');
+            } else if (currentOutfit.bg === 'room') {
+                grad.addColorStop(0, '#FFF5BA');
+                grad.addColorStop(1, '#FFD1DC');
+            } else {
+                grad.addColorStop(0, '#FFD1DC');
+                grad.addColorStop(1, '#E2CEF7');
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // キラキラデコレーション描画
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "28px sans-serif";
+            ctx.fillText("✨", 40, 60);
+            ctx.fillText("💖", width - 60, height - 50);
+            ctx.fillText("⭐", width - 50, 100);
+
+            // SVG文字列を取得してImage化
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const URL = window.URL || window.webkitURL || window;
+            const blobURL = URL.createObjectURL(svgBlob);
+
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, width, height);
+                URL.revokeObjectURL(blobURL);
+
+                // 画像データ変換＆モーダル表示
+                const dataUrl = canvas.toDataURL('image/png');
+                document.getElementById('snapshot-img').src = dataUrl;
+                document.getElementById('download-link').href = dataUrl;
+                
+                // モーダルオープン
+                const modal = document.getElementById('photo-modal');
+                const content = document.getElementById('photo-modal-content');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            };
+            img.src = blobURL;
+        }
+
+        function closePhotoModal() {
+            playSound('click');
+            const modal = document.getElementById('photo-modal');
+            const content = document.getElementById('photo-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // 初期化処理
+        window.onload = function() {
+            renderCategoryTabs();
+            renderColorPicker();
+            initSkinPicker();
+            renderItemGrid();
+            renderCharacter();
+        };
+    </script>
 </body>
 </html>
